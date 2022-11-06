@@ -127,7 +127,7 @@ export default class Treblle {
           size: response.getHeader('Content_Length'),
           load_time: getRequestDuration(requestStartTime)
         },
-        errors: []
+        errors
       },
       showErrors: Config.get('treblle.showErrors')
     }
