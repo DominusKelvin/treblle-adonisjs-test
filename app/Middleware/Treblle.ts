@@ -12,10 +12,10 @@ function getRequestDuration(startTime) {
   return Math.ceil(microseconds);
 }
 
-interface TrebllePayload {
-  api_key: string;
-  product_id: string;
-}
+// interface TrebllePayload {
+//   api_key: string;
+//   product_id: string;
+// }
 
 export default class Treblle {
   public async handle({ request, response }: HttpContextContract, next: () => Promise<void>) {

@@ -10,7 +10,6 @@
 */
 
 import Server from '@ioc:Adonis/Core/Server'
-import Env from '@ioc:Adonis/Core/Env'
 /*
 |--------------------------------------------------------------------------
 | Global middleware
