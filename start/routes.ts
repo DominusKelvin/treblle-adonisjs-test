@@ -42,3 +42,7 @@ Route.post('/users/login', async ({ request}) => {
 Route.post('/licenses', async ({ request}) => {
   return { success: true, message: 'License created successfully', data: request.body()}
 })
+
+Route.post('/error', async ({ response }) => {
+  return response.status(500).send({ success: false, message: 'Something went wrong'})
+})
