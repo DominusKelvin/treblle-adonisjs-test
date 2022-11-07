@@ -84,6 +84,13 @@ function maskSensitiveValues(payloadObject, fieldsToMaskMap) {
 
 export default class Treblle {
   public async handle({ request, response }: HttpContextContract, next: () => Promise<void>) {
+    let originalResponseBody
+    const originalSend = response.send
+    response.send = function sendOverWrite(body) {
+      originalSend.call(this, body)
+      originalResponseBody = body
+      // console.log(this.__treblle_body_response)
+    }
     // code for middleware goes here. ABOVE THE NEXT CALL
     const requestStartTime = process.hrtime()
     const payload = request.all()
@@ -92,56 +99,71 @@ export default class Treblle {
     const maskedRequestPayload = maskSensitiveValues(payload, fieldsToMask)
     let errors = []
 
-    const trebllePayload = {
-      api_key: Config.get('treblle.apiKey'),
-      project_id: Config.get('treblle.projectId'),
-      sdk: "adonisjs",
-      data: {
-        server: {
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          os: {
-            name: os.platform(),
-            release: os.release(),
-            architecture: os.arch()
-          },
-          software: null,
-          signature: null,
-          protocol,
-        },
-        language: {
-          name: 'node',
-          version: process.version
-        },
-        request: {
-          timestamp: new Date().toISOString().replace("T", " ").substr(0, 19),
-          ip: request.ip(),
-          url: request.completeUrl(),
-          user_agent: request.header('user-agent'),
-          method: request.method(),
-          headers: request.headers(),
-          body: maskedRequestPayload,
-        },
-        response: {
-          headers: response.getHeaders(),
-          code: response.getStatus(),
-          size: response.getHeader('Content_Length'),
-          load_time: getRequestDuration(requestStartTime)
-        },
-        errors
-      },
-      showErrors: Config.get('treblle.showErrors')
-    }
+    response.response.on('finish', function() {
 
-    // @ts-ignore
-    fetch('https://rocknrolla.treblle.com', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': Config.get('treblle.apiKey')
-      },
-      body: JSON.stringify(trebllePayload)
-    }).then(res => res.json())
-    .then(data => console.log(data))
+      const maskedResponseBody = maskSensitiveValues(
+        originalResponseBody,
+        fieldsToMask
+      );
+
+      console.log(maskedResponseBody)
+      console.log(response.response.getHeader('Content_Length'))
+      const trebllePayload = {
+        api_key: Config.get('treblle.apiKey'),
+        project_id: Config.get('treblle.projectId'),
+        version: '0.0.1',
+        sdk: "adonisjs",
+        data: {
+          server: {
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            os: {
+              name: os.platform(),
+              release: os.release(),
+              architecture: os.arch()
+            },
+            software: null,
+            signature: null,
+            protocol,
+          },
+          language: {
+            name: 'node',
+            version: process.version
+          },
+          request: {
+            timestamp: new Date().toISOString().replace("T", " ").substr(0, 19),
+            ip: request.ip(),
+            url: request.completeUrl(),
+            user_agent: request.header('user-agent'),
+            method: request.method(),
+            headers: request.headers(),
+            body: maskedRequestPayload,
+          },
+          response: {
+            headers: response.getHeaders(),
+            code: response.getStatus(),
+            size: response.getHeader('Content-Length'),
+            load_time: getRequestDuration(requestStartTime),
+            body: maskedResponseBody ?? null
+          },
+          errors
+        },
+        showErrors: Config.get('treblle.showErrors')
+      }
+
+      console.log(JSON.stringify(trebllePayload,null,2))
+
+      // @ts-ignore
+      fetch('https://rocknrolla.treblle.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': Config.get('treblle.apiKey')
+        },
+        body: JSON.stringify(trebllePayload)
+      }).then(res => res.json())
+      .then(data => console.log(data))
+    })
+
     await next()
   }
 }

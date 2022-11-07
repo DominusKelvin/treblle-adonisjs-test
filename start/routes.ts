@@ -21,5 +21,12 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.get('/', async () => {
-  return { hello: 'world' }
+  return { success: true, message: 'Hello World' }
+})
+Route.get('/posts/:id/:slug', async ({ request }) => {
+  /*
+   * URL: /posts/1/hello-world
+   * Params: { id: '1', slug: 'hello-world' }
+   */
+  return { success: true, message: 'Retrieved params', data: request.params() }
 })
