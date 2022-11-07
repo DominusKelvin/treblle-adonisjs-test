@@ -13,56 +13,56 @@ function getRequestDuration(startTime) : number {
   return Math.ceil(microseconds);
 }
 
-const fieldsToMask = [
-  "password",
-  "pwd",
-  "secret",
-  "password_confirmation",
-  "passwordConfirmation",
-  "cc",
-  "card_number",
-  "cardNumber",
-  "ccv",
-  "ssn",
-  "credit_score",
-  "creditScore",
-];
 
 function generateFieldsToMask(additionalFieldsToMask = []) {
-  const fields = [...fieldsToMask, ...additionalFieldsToMask];
-  const fieldsMap = fields.reduce((acc, field) => {
+  const defaultFieldsToMask = [
+    "password",
+    "pwd",
+    "secret",
+    "password_confirmation",
+    "passwordConfirmation",
+    "cc",
+    "card_number",
+    "cardNumber",
+    "ccv",
+    "ssn",
+    "credit_score",
+    "creditScore",
+  ];
+  const fields = [...defaultFieldsToMask, ...additionalFieldsToMask];
+  const fieldsToMask = fields.reduce((acc, field) => {
     acc[field] = true;
     return acc;
   }, {});
-  return fieldsMap;
+  return fieldsToMask;
 }
 
-function maskSensitiveValues(payloadObject, fieldsToMaskMap) {
-  if (typeof payloadObject === null) return null;
-  if (typeof payloadObject !== "object") return payloadObject;
-  if (Array.isArray(payloadObject)) {
-    return payloadObject.map((val) =>
-      maskSensitiveValues(val, fieldsToMaskMap)
+function maskSensitiveValues(payload, fieldsToMask) {
+  if (typeof payload === null) return null;
+  if (typeof payload !== "object") return payload;
+  if (Array.isArray(payload)) {
+    return payload.map((val) =>
+      maskSensitiveValues(val, fieldsToMask)
     );
   }
 
-  let objectToMask = { ...payloadObject };
+  let objectToMask = { ...payload };
 
   let safeObject = Object.keys(objectToMask).reduce(function (acc, propName) {
     if (typeof objectToMask[propName] === "string") {
-      if (fieldsToMaskMap[propName] === true) {
+      if (fieldsToMask[propName] === true) {
         acc[propName] = "*".repeat(objectToMask[propName].length);
       } else {
         acc[propName] = objectToMask[propName];
       }
     } else if (Array.isArray(objectToMask[propName])) {
       acc[propName] = objectToMask[propName].map((val) =>
-        maskSensitiveValues(val, fieldsToMaskMap)
+        maskSensitiveValues(val, fieldsToMask)
       );
     } else if (typeof objectToMask[propName] === "object") {
       acc[propName] = maskSensitiveValues(
         objectToMask[propName],
-        fieldsToMaskMap
+        fieldsToMask
       );
     } else {
       acc[propName] = objectToMask[propName];
@@ -73,14 +73,6 @@ function maskSensitiveValues(payloadObject, fieldsToMaskMap) {
 
   return safeObject;
 }
-
-
-
-
-// interface TrebllePayload {
-//   api_key: string;
-//   product_id: string;
-// }
 
 export default class Treblle {
   public async handle({ request, response }: HttpContextContract, next: () => Promise<void>) {
@@ -106,8 +98,6 @@ export default class Treblle {
         fieldsToMask
       );
 
-      console.log(maskedResponseBody)
-      console.log(response.response.getHeader('Content_Length'))
       const trebllePayload = {
         api_key: Config.get('treblle.apiKey'),
         project_id: Config.get('treblle.projectId'),
@@ -150,7 +140,7 @@ export default class Treblle {
         showErrors: Config.get('treblle.showErrors')
       }
 
-      console.log(JSON.stringify(trebllePayload,null,2))
+      // console.log(JSON.stringify(trebllePayload,null,2))
 
       // @ts-ignore
       fetch('https://rocknrolla.treblle.com', {

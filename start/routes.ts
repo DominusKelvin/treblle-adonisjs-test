@@ -30,3 +30,15 @@ Route.get('/posts/:id/:slug', async ({ request }) => {
    */
   return { success: true, message: 'Retrieved params', data: request.params() }
 })
+
+Route.post('/posts', async ({ request }) => {
+  return { success: true, message: 'Post created successfully', data: request.body() }
+})
+
+Route.post('/users/login', async ({ request}) => {
+  return { success: true, message: 'Log in successful', data: request.body()}
+})
+
+Route.post('/licenses', async ({ request}) => {
+  return { success: true, message: 'License created successfully', data: request.body()}
+})
